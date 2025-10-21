@@ -64,7 +64,21 @@ export default function BookingModal({ barber, seat, prices, bookedSlots = [], o
     // Create appointment in Supabase (best-effort)
     try {
       const dateTime = new Date(`${selectedDate}T${selectedTime}:00`);
-      await supabase.from('appointments').insert({ customer_name: 'Guest', date_time: dateTime.toISOString(), services: selectedServices, seat_id: seat.id, status: 'pending' });
+      
+      // Get current user for customer_id
+      const { data: { user } } = await supabase.auth.getUser();
+      const customerId = user?.id || null;
+      const customerName = user?.user_metadata?.name || 'Guest';
+      
+      await supabase.from('appointments').insert({ 
+        customer_name: customerName, 
+        customer_id: customerId,
+        date_time: dateTime.toISOString(), 
+        services: selectedServices, 
+        seat_id: seat.id, 
+        barber_id: barber.id,
+        status: 'pending' 
+      });
     } catch(_) { /* offline/mock */ }
     onPay();
   };
