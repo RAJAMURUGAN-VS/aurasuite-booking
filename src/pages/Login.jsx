@@ -12,7 +12,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [barberCount, setBarberCount] = useState(0);
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const navigate = useNavigate();
 
   // Separate loading states for each tab
@@ -31,7 +30,6 @@ export default function Login() {
         if (!error) {
           const count = data || 0;
           setBarberCount(count);
-          setIsMaintenanceMode(count < 6);
         }
       } catch (err) {
         console.error('Error checking barber count:', err);
@@ -45,12 +43,6 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setUserLoading(true);
-    
-    if (isMaintenanceMode) {
-      setError('The site is currently under maintenance. Please try again later.');
-      setUserLoading(false);
-      return;
-    }
     
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -66,11 +58,6 @@ export default function Login() {
   const handleUserSignup = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (isMaintenanceMode) {
-      setError('The site is currently under maintenance. Please try again later.');
-      return;
-    }
     
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -276,16 +263,16 @@ export default function Login() {
         </div>
 
         {/* Maintenance Mode Warning */}
-        {activeTab === 'user' && isMaintenanceMode && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        {activeTab === 'user' && barberCount === 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <span className="text-yellow-400 text-xl">⚠️</span>
+                <span className="text-blue-400 text-xl">ℹ️</span>
               </div>
               <div className="ml-3">
-                <p className="text-yellow-800 font-medium">Site Under Maintenance</p>
-                <p className="text-yellow-700 text-sm mt-1">
-                  Barbers are being set up ({barberCount}/6). User access will be available soon.
+                <p className="text-blue-800 font-medium">No Barbers Available</p>
+                <p className="text-blue-700 text-sm mt-1">
+                  Admin needs to add barbers before seats become available for booking.
                 </p>
               </div>
             </div>
@@ -356,7 +343,7 @@ export default function Login() {
             
             <button 
               type="submit"
-              disabled={userLoading || (isMaintenanceMode && !isSignup)}
+              disabled={userLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
             >
               {userLoading ? (isSignup ? 'Creating account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}

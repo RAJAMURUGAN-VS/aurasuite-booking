@@ -19,23 +19,20 @@ function Timer({ expiresAt }) {
   );
 }
 
-export default function Seat({ seat, onClick }) {
-  const isBooked = seat.state === 'booked';
-  const isAvailable = seat.state === 'available';
-  const isReserved = seat.state === 'reserved';
-  const color = isAvailable ? 'bg-green-500 hover:bg-green-600 focus:ring-green-300' : isBooked ? 'bg-red-500 hover:bg-red-600 focus:ring-red-300' : 'bg-amber-500 hover:bg-amber-600 focus:ring-amber-300';
+export default function Seat({ seat, onClick, currentState, isRunning }) {
+  // Seat is red only when this seat is currently being served
+  const isCurrentlyServed = isRunning && currentState?.seat_id === seat.id;
+  const color = isCurrentlyServed
+    ? 'bg-red-500 hover:bg-red-600 focus:ring-red-300'
+    : 'bg-green-500 hover:bg-green-600 focus:ring-green-300';
 
   return (
     <div className="flex items-center gap-2">
-      {isBooked && seat.expiresAt && (
-        <div className="flex-shrink-0">
-          <Timer expiresAt={seat.expiresAt} />
-        </div>
-      )}
+      {/* Timer next to seat is handled by SeatGrid using currentState; no local timer here */}
       <button
         onClick={() => onClick(seat)}
         className={`w-24 h-24 rounded-lg font-semibold text-white transition-all cursor-pointer ${color} hover:scale-105 focus:ring-4`}
-        aria-label={`${seat.label} - ${isAvailable ? 'Available' : isBooked ? 'Booked' : 'Reserved'}`}
+        aria-label={`${seat.label} - ${isCurrentlyServed ? 'Currently Served' : 'Available'}`}
       >
         {seat.label}
       </button>

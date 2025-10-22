@@ -3,6 +3,7 @@ import Seat from './Seat.jsx';
 import BookingModal from './modals/BookingModal.jsx';
 import BarberInfoModal from './modals/BarberInfoModal.jsx';
 import { useSeatTimers } from '../hooks/useSeatTimers.js';
+import { useCurrentStateTimer } from '../hooks/useCurrentStateTimer.js';
 import { supabase } from '../lib/supabaseClient.js';
 
 export default function SeatGrid() {
@@ -14,6 +15,9 @@ export default function SeatGrid() {
   const [toast, setToast] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Use the timer hook to get current state
+  const { currentState, timeRemaining, isRunning, isPaused, formatTime } = useCurrentStateTimer();
 
   // Fetch data from Supabase
   useEffect(() => {
@@ -166,6 +170,26 @@ export default function SeatGrid() {
           <p className="text-gray-600">Select any seat to view barber info or make a booking</p>
         </div>
 
+        {/* Current Service Status */}
+        {isRunning && currentState && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-800">Service in Progress</h3>
+                <p className="text-blue-600">Seat: {currentState.seat_id}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-800">
+                  {formatTime(timeRemaining)}
+                </div>
+                <div className="text-sm text-blue-600">
+                  {isPaused ? 'Paused' : 'Time Remaining'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-4 justify-center mb-8 bg-white rounded-lg p-4 shadow">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-500 rounded"></div>
@@ -173,18 +197,27 @@ export default function SeatGrid() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-sm text-gray-700">Booked</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-amber-500 rounded"></div>
-            <span className="text-sm text-gray-700">Reserved</span>
+            <span className="text-sm text-gray-700">Currently Served</span>
           </div>
         </div>
 
         <div className="flex justify-center gap-12 items-start">
           <div className="flex flex-col gap-8">
             {left.map(seat => (
-              <Seat key={seat.id} seat={seat} onClick={handleSeatClick} />
+              <div key={seat.id} className="flex items-center gap-4">
+                {/* Timer for left side seats */}
+                {isRunning && currentState?.seat_id === seat.id && (
+                  <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 min-w-[80px] text-center">
+                    <div className="text-lg font-bold text-blue-800">
+                      {formatTime(timeRemaining)}
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      {isPaused ? 'Paused' : 'Running'}
+                    </div>
+                  </div>
+                )}
+                <Seat seat={seat} onClick={handleSeatClick} currentState={currentState} isRunning={isRunning} />
+              </div>
             ))}
           </div>
 
@@ -194,7 +227,20 @@ export default function SeatGrid() {
 
               <div className="flex flex-col gap-8">
                 {right.map(seat => (
-                  <Seat key={seat.id} seat={seat} onClick={handleSeatClick} />
+                  <div key={seat.id} className="flex items-center gap-4">
+                    <Seat seat={seat} onClick={handleSeatClick} currentState={currentState} isRunning={isRunning} />
+                    {/* Timer for right side seats */}
+                    {isRunning && currentState?.seat_id === seat.id && (
+                      <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 min-w-[80px] text-center">
+                        <div className="text-lg font-bold text-blue-800">
+                          {formatTime(timeRemaining)}
+                        </div>
+                        <div className="text-xs text-blue-600">
+                          {isPaused ? 'Paused' : 'Running'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </>
@@ -215,6 +261,10 @@ export default function SeatGrid() {
         <BookingModal
           barber={barber}
           seat={selectedSeat}
+          prices={barber.services ? barber.services.reduce((acc, service) => {
+            acc[service] = 25; // Default price, can be customized per barber
+            return acc;
+          }, {}) : {}}
           onClose={() => { setShowB(false); setSelectedSeat(null); }}
           onPay={handlePay}
         />

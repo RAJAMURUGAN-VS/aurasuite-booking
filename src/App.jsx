@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
 import SeatGrid from './components/SeatGrid.jsx';
 import Login from './pages/Login.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
@@ -12,6 +12,7 @@ import { supabase } from './lib/supabaseClient.js';
 function Navbar() {
   const [user, setUser] = React.useState(null);
   const [userRole, setUserRole] = React.useState(null);
+  const navigate = useNavigate();
   
   React.useEffect(() => {
     const getUser = async () => {
@@ -31,6 +32,7 @@ function Navbar() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    navigate('/login', { replace: true });
   };
 
   return (

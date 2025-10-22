@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const MAX_BARBERS = 6;
+  // Remove MAX_BARBERS limit - allow unlimited barbers
 
   useEffect(() => {
     fetchBarbers();
@@ -48,10 +48,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (barbers.length >= MAX_BARBERS) {
-      setError('Maximum number of barbers reached');
-      return;
-    }
 
     // Check if ID already exists
     if (barbers.some(b => b.id === newBarber.id)) {
@@ -82,7 +78,24 @@ export default function AdminDashboard() {
 
       if (barberError) throw barberError;
 
-      setSuccess('Barber added successfully! The barber can now login with their email and password.');
+      // Create a seat for this barber
+      const seatId = `S${barbers.length + 1}`;
+      const { error: seatError } = await supabase
+        .from('seats')
+        .insert({
+          id: seatId,
+          label: `Seat ${barbers.length + 1}`,
+          barber_id: newBarber.id,
+          state: 'available',
+          expires_at: null
+        });
+
+      if (seatError) {
+        console.warn('Failed to create seat for barber:', seatError);
+        // Don't fail the entire operation if seat creation fails
+      }
+
+      setSuccess('Barber and seat added successfully! The barber can now login with their email and password.');
       setNewBarber({ id: '', name: '', password: '', experience: '', email: '' });
       setShowAddForm(false);
       fetchBarbers();
@@ -92,9 +105,20 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteBarber = async (barberId) => {
-    if (!confirm('Are you sure you want to delete this barber?')) return;
+    if (!confirm('Are you sure you want to delete this barber? This will also delete their seat.')) return;
 
     try {
+      // First delete the seat associated with this barber
+      const { error: seatError } = await supabase
+        .from('seats')
+        .delete()
+        .eq('barber_id', barberId);
+
+      if (seatError) {
+        console.warn('Failed to delete seat:', seatError);
+      }
+
+      // Then delete the barber
       const { error } = await supabase
         .from('barbers')
         .delete()
@@ -102,7 +126,7 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      setSuccess('Barber deleted successfully!');
+      setSuccess('Barber and seat deleted successfully!');
       fetchBarbers();
     } catch (err) {
       setError('Failed to delete barber');
@@ -144,7 +168,7 @@ export default function AdminDashboard() {
             </div>
             <div className="text-right">
               <div className="text-sm text-gray-500">Barbers Added</div>
-              <div className="text-2xl font-bold text-blue-600">{barbers.length}/{MAX_BARBERS}</div>
+              <div className="text-2xl font-bold text-blue-600">{barbers.length}</div>
             </div>
           </div>
 
@@ -167,27 +191,14 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-semibold text-gray-800">Barber Management</h2>
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                disabled={barbers.length >= MAX_BARBERS}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
-                {showAddForm ? 'Cancel' : `Add Barber (${barbers.length}/${MAX_BARBERS})`}
+                {showAddForm ? 'Cancel' : `Add Barber (${barbers.length})`}
               </button>
             </div>
 
-            {barbers.length >= MAX_BARBERS && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center">
-                  <span className="text-green-400 text-xl mr-3">✅</span>
-                  <div>
-                    <p className="text-green-800 font-medium">All barbers added!</p>
-                    <p className="text-green-700 text-sm">User access is now enabled.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Add Barber Form */}
-            {showAddForm && barbers.length < MAX_BARBERS && (
+            {showAddForm && (
               <form onSubmit={handleAddBarber} className="bg-gray-50 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New Barber</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

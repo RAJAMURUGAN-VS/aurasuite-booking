@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabaseClient.js';
 
-export default function BookingModal({ barber, seat, prices, bookedSlots = [], onClose, onPay }){
+export default function BookingModal({ barber, seat, prices = {}, bookedSlots = [], onClose, onPay }){
   const [selectedServices, setSelectedServices] = useState([]);
   const [showServiceMenu, setShowServiceMenu] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
@@ -9,7 +9,16 @@ export default function BookingModal({ barber, seat, prices, bookedSlots = [], o
   const [errors, setErrors] = useState({});
   const dialogRef = useRef(null);
 
-  const services = Object.keys(prices);
+  // Default services and prices if not provided
+  const defaultPrices = {
+    'Haircut': 25,
+    'Styling': 15,
+    'Beard Trim': 20,
+    'Shampoo': 10
+  };
+  
+  const finalPrices = Object.keys(prices).length > 0 ? prices : defaultPrices;
+  const services = Object.keys(finalPrices);
   const availableTimes = Array.from({length: 17}, (_,i)=>{
     const h = 9 + Math.floor(i/2); const m = i%2 ? '30' : '00';
     return `${String(h).padStart(2,'0')}:${m}`;
@@ -26,7 +35,7 @@ export default function BookingModal({ barber, seat, prices, bookedSlots = [], o
   const addService = (s)=>{ if(!selectedServices.includes(s)){ setSelectedServices([...selectedServices, s]); setErrors(e=>({ ...e, services:null })); } setShowServiceMenu(false); };
   const removeService = (s)=> setSelectedServices(selectedServices.filter(x=>x!==s));
 
-  const subtotal = selectedServices.reduce((sum, s)=> sum + prices[s], 0);
+  const subtotal = selectedServices.reduce((sum, s)=> sum + finalPrices[s], 0);
   const tax = subtotal * 0.085;
   const total = subtotal + tax;
 
@@ -105,7 +114,7 @@ export default function BookingModal({ barber, seat, prices, bookedSlots = [], o
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {services.map(s=> (
                       <button key={s} onClick={()=>addService(s)} disabled={selectedServices.includes(s)} className="w-full text-left px-4 py-2 hover:bg-gray-50 disabled:opacity-50">
-                        {s} - ${prices[s]}
+                        {s} - ${finalPrices[s]}
                       </button>
                     ))}
                   </div>
@@ -156,7 +165,7 @@ export default function BookingModal({ barber, seat, prices, bookedSlots = [], o
             </div>
             <div className="space-y-2 mb-4">
               {selectedServices.length ? selectedServices.map(s=> (
-                <div key={s} className="flex justify-between text-sm"><span className="text-gray-700">{s}</span><span className="font-semibold text-gray-800">${prices[s]}</span></div>
+                <div key={s} className="flex justify-between text-sm"><span className="text-gray-700">{s}</span><span className="font-semibold text-gray-800">${finalPrices[s]}</span></div>
               )) : <p className="text-sm text-gray-500 italic">No services selected</p>}
             </div>
             {selectedServices.length>0 && (

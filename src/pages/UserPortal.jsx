@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient.js';
+import { useCurrentStateTimer } from '../hooks/useCurrentStateTimer.js';
 
 export default function UserPortal() {
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Use the timer hook to get current state
+  const { currentState, timeRemaining, isRunning, isPaused, formatTime } = useCurrentStateTimer();
 
   useEffect(() => {
     const getUser = async () => {
