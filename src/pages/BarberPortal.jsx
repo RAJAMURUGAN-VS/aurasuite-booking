@@ -9,7 +9,6 @@ export default function BarberPortal() {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   
-  // Use the new timer hook
   const {
     currentState,
     timeRemaining,

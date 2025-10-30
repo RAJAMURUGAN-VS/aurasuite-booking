@@ -14,12 +14,10 @@ export default function Login() {
   const [barberCount, setBarberCount] = useState(0);
   const navigate = useNavigate();
 
-  // Separate loading states for each tab
   const [userLoading, setUserLoading] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [barberLoading, setBarberLoading] = useState(false);
 
-  // Check barber count and maintenance mode
   useEffect(() => {
     const checkBarberCount = async () => {
       try {

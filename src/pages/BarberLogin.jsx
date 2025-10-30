@@ -14,7 +14,6 @@ export default function BarberLogin() {
     setError('');
     setLoading(true);
 
-    // First check if this email exists in barbers table
     const { data: barberData, error: barberError } = await supabase
       .from('barbers')
       .select('*')
@@ -27,21 +26,18 @@ export default function BarberLogin() {
       return;
     }
 
-    // Check password (in production, use proper hashing)
     if (barberData.password_hash !== password) {
       setError('Invalid password.');
       setLoading(false);
       return;
     }
 
-    // Create or sign in with Supabase auth
     const { data, error } = await supabase.auth.signInWithPassword({ 
       email, 
-      password: password // Use the barber's password
+      password: password 
     });
 
     if (error) {
-      // If user doesn't exist in auth, create them
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -66,7 +62,6 @@ export default function BarberLogin() {
         return;
       }
     } else {
-      // Sign in successful, update metadata if needed
       await supabase.auth.updateUser({
         data: { 
           role: 'barber', 
